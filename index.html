@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生物预习：神经系统支配下的运动</title>
+    <!-- 引入 Chart.js 用于统计图表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 QRCode 生成库 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --primary: #2e7d32; --bg: #f1f8e9; --card: #ffffff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); padding: 20px; color: #333; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 5px; text-align: center; }
+        .sub-title { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+        
+        /* 表单样式 */
+        .q-item { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed #ddd; }
+        .q-title { font-weight: bold; margin-bottom: 10px; display: block; }
+        .opt-label { display: block; padding: 8px 12px; margin: 5px 0; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .opt-label:hover { background: #e8f5e9; }
+        input[type="radio"] { margin-right: 8px; accent-color: var(--primary); }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; }
+        
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+        button:hover { opacity: 0.9; }
+        
+        /* 反馈与统计样式 */
+        .feedback { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; animation: fadeIn 0.5s; }
+        .correct { background: #e8f5e9; border-left: 5px solid #2e7d32; }
+        .wrong { background: #ffebee; border-left: 5px solid #c62828; }
+        .stats-box { margin-top: 30px; display: none; }
+        .chart-container { position: relative; height: 250px; width: 100%; margin: 20px 0; }
+        .qr-section { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; display: none; }
+        #qrcode { display: inline-block; padding: 10px; background: white; border-radius: 8px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="quizView">
+    <h1>🧬 神经系统支配下的运动</h1>
+    <div class="sub-title">人教版八年级上册 · 课前预习检测</div>
+    <form id="quizForm">
+        <div class="q-item">
+            <span class="q-title">1. 在运动中，骨、关节和骨骼肌分别起到的作用是？</span>
+            <label class="opt-label"><input type="radio" name="q1" value="A"> A. 动力、支点、杠杆</label>
+            <label class="opt-label"><input type="radio" name="q1" value="B"> B. 杠杆、支点、动力</label>
+            <label class="opt-label"><input type="radio" name="q1" value="C"> C. 支点、杠杆、动力</label>
+            <label class="opt-label"><input type="radio" name="q1" value="D"> D. 杠杆、动力、支点</label>
+        </div>
+        <div class="q-item">
+            <span class="q-title">2. 做屈肘动作时，上臂肌肉的状态是？</span>
+            <label class="opt-label"><input type="radio" name="q2" value="A"> A. 肱二头肌收缩，肱三头肌收缩</label>
+            <label class="opt-label"><input type="radio" name="q2" value="B"> B. 肱二头肌舒张，肱三头肌舒张</label>
+            <label class="opt-label"><input type="radio" name="q2" value="C"> C. 肱二头肌收缩，肱三头肌舒张</label>
+            <label class="opt-label"><input type="radio" name="q2" value="D"> D. 肱二头肌舒张，肱三头肌收缩</label>
+        </div>
+        <div class="q-item">
+            <span class="q-title">3. 运动需要多系统配合：能量由消化、呼吸和[填空1]系统提供；整个过程受[填空2]系统支配。</span>
+            <input type="text" name="q3_1" placeholder="填空1：例如 循环">
+            <input type="text" name="q3_2" placeholder="填空2：例如 神经" style="margin-top:8px;">
+        </div>
+        <button type="button" onclick="submitQuiz()">提交答案</button>
+    </form>
+    <div id="feedbackArea" class="feedback"></div>
+</div>
+
+<!-- 教师统计面板 -->
+<div class="container stats-box" id="statsView">
+    <h1>📊 班级答题数据分析</h1>
+    <div class="sub-title">实时统计 · 本地缓存</div>
+    <div class="chart-container"><canvas id="myChart"></canvas></div>
+    <div id="analysisText" style="font-size:0.95rem; color:#444; margin-top:15px;"></div>
+    <div class="qr-section" id="qrSection">
+        <p style="margin-bottom:10px; font-weight:bold;">📱 学生扫码答题入口</p>
+        <div id="qrcode"></div>
+        <p style="font-size:0.8rem; color:#888; margin-top:8px;">* 需将文件部署至服务器或局域网共享</p>
+    </div>
+    <button onclick="resetStats()" style="background:#666; margin-top:20px;">清空所有数据</button>
+</div>
+
+<script>
+    // 答案与点评配置
+    const ANSWERS = {
+        q1: 'B',
+        q2: 'C',
+        q3_1: ['循环', '血液', '心血管'], // 关键词匹配
+        q3_2: ['神经']
+    };
+
+    const COMMENTS = {
+        q1: { correct: "✅ 正确！骨是杠杆，关节是支点，骨骼肌提供动力。", wrong: "❌ 错误。记住口诀：骨杠杆、关节支点、肌肉动力。" },
+        q2: { correct: "✅ 正确！屈肘时肱二头肌收缩，肱三头肌舒张。", wrong: "❌ 错误。屈肘=二头收缩/三头舒张；伸肘则相反。" },
+        q3: { correct: "✅ 正确！运动需要神经调节和循环系统运输氧气/养料。", wrong: "❌ 错误。能量运输靠循环系统，指挥靠神经系统。" }
+    };
+
+    let chartInstance = null;
+
+    // 提交逻辑
+    function submitQuiz() {
+        const form = document.getElementById('quizForm');
+        const formData = new FormData(form);
+        let score = 0;
+        let html = "";
+        let stats = JSON.parse(localStorage.getItem('bio_quiz_stats') || '{"q1":0,"q2":0,"q3":0,"total":0}');
+        stats.total++;
+
+        // 判分逻辑
+        const q1 = formData.get('q1');
+        const q2 = formData.get('q2');
+        const q3_1 = formData.get('q3_1')?.trim();
+        const q3_2 = formData.get('q3_2')?.trim();
+
+        const isQ1 = q1 === ANSWERS.q1;
+        const isQ2 = q2 === ANSWERS.q2;
+        const isQ3_1 = ANSWERS.q3_1.some(k => q3_1 && q3_1.includes(k));
+        const isQ3_2 = ANSWERS.q3_2.some(k => q3_2 && q3_2.includes(k));
+
+        if(isQ1) { score++; stats.q1++; }
+        if(isQ2) { score++; stats.q2++; }
+        if(isQ3_1 && isQ3_2) { score++; stats.q3++; }
+
+        // 生成反馈
+        html += `<p><strong>得分：${score}/3</strong></p>`;
+        html += `<p>${isQ1 ? COMMENTS.q1.correct : COMMENTS.q1.wrong}</p>`;
+        html += `<p>${isQ2 ? COMMENTS.q2.correct : COMMENTS.q2.wrong}</p>`;
+        html += `<p>${(isQ3_1 && isQ3_2) ? COMMENTS.q3.correct : COMMENTS.q3.wrong}</p>`;
+
+        const fb = document.getElementById('feedbackArea');
+        fb.innerHTML = html;
+        fb.className = `feedback ${score === 3 ? 'correct' : 'wrong'}`;
+        fb.style.display = 'block';
+
+        // 保存统计
+        localStorage.setItem('bio_quiz_stats', JSON.stringify(stats));
+        
+        // 3秒后跳转统计页（模拟教师端）
+        setTimeout(() => {
+            if(confirm("答题完成！是否查看班级统计数据？")) showStats();
+        }, 1500);
+    }
+
+    // 统计页逻辑
+    function showStats() {
+        document.getElementById('quizView').classList.add('hidden');
+        document.getElementById('statsView').style.display = 'block';
+        document.getElementById('qrSection').style.display = 'block';
+        
+        const stats = JSON.parse(localStorage.getItem('bio_quiz_stats') || '{"q1":0,"q2":0,"q3":0,"total":0}');
+        const t = stats.total || 1; // 防止除0
+
+        // 生成二维码 (当前页面URL)
+        const qrDiv = document.getElementById('qrcode');
+        qrDiv.innerHTML = ""; // 清空旧码
+        new QRCode(qrDiv, {
+            text: window.location.href,
+            width: 128, height: 128,
+            colorDark : "#2e7d32", colorLight : "#ffffff"
+        });
+
+        // 渲染图表
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['第1题(选择)', '第2题(选择)', '第3题(填空)'],
+                datasets: [{
+                    label: '正确人数',
+                    data: [stats.q1, stats.q2, stats.q3],
+                    backgroundColor: ['#81c784', '#4caf50', '#2e7d32'],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 文字分析
+        const items = [
+            {name:'第1题', rate: (stats.q1/t*100).toFixed(0)},
+            {name:'第2题', rate: (stats.q2/t*100).toFixed(0)},
+            {name:'第3题', rate: (stats.q3/t*100).toFixed(0)}
+        ];
+        const weak = items.sort((a,b) => a.rate - b.rate)[0];
+        
+        document.getElementById('analysisText').innerHTML = `
+            <p>📝 <strong>总答题人数：</strong>${stats.total} 人</p>
+            <p>📉 <strong>薄弱点分析：</strong>「${weak.name}」正确率仅 <strong>${weak.rate}%</strong>，建议课堂上重点讲解。</p>
+            <p>💡 <strong>教学建议：</strong>${weak.rate < 60 ? '该知识点预习效果不佳，需重新引入概念。' : '整体预习情况良好，可直接进入探究环节。'}</p>
+        `;
+    }
+
+    function resetStats() {
+        if(confirm("确定要清空所有班级数据吗？")) {
+            localStorage.removeItem('bio_quiz_stats');
+            location.reload();
+        }
+    }
+
+    // 自动检测URL参数，如果是 ?mode=stats 则直接进入统计页
+    if(window.location.search.includes('mode=stats')) showStats();
+</script>
+</body>
+</html>
